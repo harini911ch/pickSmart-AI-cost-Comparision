@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PickSmart — Compare Food</title>
+  <link rel="stylesheet" href="style.css"/>
+  <style>
+    .content { display: grid; grid-template-columns: 370px 1fr; gap: 28px; padding: 32px 48px; }
+
+    /* RESTAURANT CARD */
+    .rest-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 16px; overflow: hidden;
+      transition: all .25s; margin-bottom: 14px;
+    }
+    .rest-card:hover { border-color: rgba(249,115,22,.4); transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,0,0,.3); }
+
+    .rest-header {
+      padding: 18px 22px; display: flex; align-items: center; gap: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .rest-emoji { font-size: 38px; flex-shrink: 0; }
+    .rest-name  { font-family: 'Syne', sans-serif; font-size: 17px; font-weight: 700; margin-bottom: 4px; }
+    .rest-meta  { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 10px; }
+    .rest-winner { margin-left: auto; flex-shrink: 0; }
+
+    /* PLATFORM COMPARISON ROW */
+    .platforms-row { display: grid; grid-template-columns: 1fr 1fr; }
+    .plat-col {
+      padding: 16px 22px;
+      display: flex; flex-direction: column; justify-content: space-between;
+      gap: 10px;
+    }
+    .plat-col:first-child { border-right: 1px solid var(--border); }
+    .plat-col.winner-bg-swiggy { background: rgba(252,128,25,.04); }
+    .plat-col.winner-bg-zomato { background: rgba(226,55,68,.04); }
+
+    .plat-name { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; }
+    .plat-dot  { width: 9px; height: 9px; border-radius: 50%; }
+    .plat-price { font-family: 'Syne', sans-serif; font-size: 24px; font-weight: 800; }
+    .plat-delivery { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .cheaper-tag { font-size: 10px; font-weight: 700; color: var(--green); margin-top: 2px; }
+
+    /* RESULTS HEADER */
+    .results-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 16px; flex-wrap: wrap; gap: 10px;
+    }
+    .results-header h3 { font-size: 17px; }
+
+    @media (max-width: 900px) {
+      .content { grid-template-columns: 1fr; padding: 20px; }
+    }
+  </style>
+</head>
+<body>
+<div class="mesh"></div>
+
+<nav class="navbar">
+  <div class="nav-logo">Pick<span>Smart</span> ✦</div>
+  <div class="nav-links">
+    <a class="nav-link" href="dashboard.html">Home</a>
+    <a class="nav-link" href="travel.html">Travel</a>
+    <a class="nav-link active">Food</a>
+  </div>
+  <div id="navAvatar" class="nav-avatar">U</div>
+</nav>
+
+<div class="page-header">
+  <a class="back-btn" href="dashboard.html">←</a>
+  <div>
+    <h2>🍽️ Compare Food</h2>
+    <p>Swiggy vs Zomato — price & delivery time</p>
+  </div>
+</div>
+
+<div class="content">
+
+  <!-- ── SEARCH PANEL ── -->
+  <div class="search-panel">
+    <h3>Search Food</h3>
+
+    <div class="input-wrap">
+      <span class="input-icon">🔍</span>
+      <input class="input-field" type="text" id="foodInput"
+        placeholder="e.g. Biryani, Pizza, Dosa"
+        onkeydown="if(event.key==='Enter') searchFood()"/>
+    </div>
+
+    <div class="section-label">Sort By</div>
+    <div class="chips">
+      <div class="chip active" id="fPrice"  onclick="setFoodSort('price')">💰 Price</div>
+      <div class="chip" id="fTime"   onclick="setFoodSort('time')">🕐 Delivery</div>
+      <div class="chip" id="fRating" onclick="setFoodSort('rating')">⭐ Rating</div>
+    </div>
+
+    <div class="section-label">Quick Search</div>
+    <div class="chips">
+      <div class="chip" onclick="quick('Biryani')">🍚 Biryani</div>
+      <div class="chip" onclick="quick('Pizza')">🍕 Pizza</div>
+      <div class="chip" onclick="quick('Burger')">🍔 Burger</div>
+      <div class="chip" onclick="quick('Idli')">🥣 Idli</div>
+      <div class="chip" onclick="quick('Dosa')">🫓 Dosa</div>
+      <div class="chip" onclick="quick('Rolls')">🌯 Rolls</div>
+      <div class="chip" onclick="quick('Pasta')">🍝 Pasta</div>
+      <div class="chip" onclick="quick('Noodles')">🍜 Noodles</div>
+    </div>
+
+    <button class="btn btn-orange" style="width:100%;justify-content:center;margin-top:22px" onclick="searchFood()">
+      🔍 Search
+    </button>
+  </div>
+
+  <!-- ── RESULTS ── -->
+  <div>
+    <div class="results-header">
+      <h3 id="foodTitle">Search a dish to compare restaurants</h3>
+    </div>
+    <div id="foodResults">
+      <div class="empty-state">
+        <span class="big-icon">🍛</span>
+        <h3>What are you craving?</h3>
+        <p>Search any dish to compare Swiggy & Zomato prices side by side</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="script.js"></script>
+<script>
+  let foodSort = 'price';
+
+  const user = sessionStorage.getItem('ps_user') || 'U';
+  document.getElementById('navAvatar').textContent = user[0].toUpperCase();
+
+  function setFoodSort(s) {
+    foodSort = s;
+    ['fPrice','fTime','fRating'].forEach(id => document.getElementById(id).classList.remove('active'));
+    document.getElementById({ price:'fPrice', time:'fTime', rating:'fRating' }[s]).classList.add('active');
+  }
+
+  function quick(item) {
+    document.getElementById('foodInput').value = item;
+    searchFood();
+  }
+
+  async function searchFood() {
+    const item = document.getElementById('foodInput').value.trim();
+    if (!item) { showToast('⚠️ Please enter a food item', '#f97316'); return; }
+
+    document.getElementById('foodResults').innerHTML = '<div class="loading-dots"><span></span><span></span><span></span></div>';
+    document.getElementById('foodTitle').textContent = 'Searching…';
+
+    try {
+      const res  = await fetch(`/api/food?item=${encodeURIComponent(item)}&sort=${foodSort}`);
+      const data = await res.json();
+
+      if (!res.ok) {
+        document.getElementById('foodResults').innerHTML = `<div class="empty-state"><span class="big-icon">🤔</span><h3>Not found</h3><p>${data.error}</p></div>`;
+        document.getElementById('foodTitle').textContent = 'No results';
+        return;
+      }
+      renderFood(data);
+    } catch (err) {
+      document.getElementById('foodResults').innerHTML = '<div class="empty-state"><span class="big-icon">⚠️</span><h3>Server not running</h3><p>Start the backend with: <code>npm start</code></p></div>';
+    }
+  }
+
+  function renderFood(data) {
+    const rests = data.restaurants;
+    document.getElementById('foodTitle').textContent =
+      `${rests.length} restaurants for "${data.searchItem}"`;
+
+    let html = '';
+    rests.forEach(r => {
+      const isSwiggyWinner = r.winner === 'swiggy';
+      const winnerLabel    = isSwiggyWinner ? '🧡 Best on Swiggy' : '❤️ Best on Zomato';
+      const winnerTagCls   = isSwiggyWinner ? 'tag-orange' : 'tag-red';
+      const swiggyBg       = isSwiggyWinner ? 'winner-bg-swiggy' : '';
+      const zomatoBg       = !isSwiggyWinner ? 'winner-bg-zomato' : '';
+
+      html += `<div class="rest-card">
+        <div class="rest-header">
+          <div class="rest-emoji">${r.emoji}</div>
+          <div style="flex:1">
+            <div class="rest-name">${r.name}</div>
+            <div class="rest-meta">
+              <span>⭐ ${r.rating}</span>
+              <span>·</span>
+              <span>${r.cuisine}</span>
+            </div>
+          </div>
+          <div class="rest-winner tag ${winnerTagCls}">${winnerLabel}</div>
+        </div>
+        <div class="platforms-row">
+          <!-- SWIGGY -->
+          <div class="plat-col ${swiggyBg}">
+            <div>
+              <div class="plat-name">
+                <div class="plat-dot" style="background:#fc8019"></div> Swiggy
+              </div>
+              <div class="plat-price" style="color:#fc8019">₹${r.swiggy.price}</div>
+              <div class="plat-delivery">🕐 ${r.swiggy.time} min delivery</div>
+              ${r.swiggy.price <= r.zomato.price ? '<div class="cheaper-tag">✅ Cheaper</div>' : ''}
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="orderNow('Swiggy','${r.name}')">
+              Order on Swiggy →
+            </button>
+          </div>
+          <!-- ZOMATO -->
+          <div class="plat-col ${zomatoBg}">
+            <div>
+              <div class="plat-name">
+                <div class="plat-dot" style="background:#e23744"></div> Zomato
+              </div>
+              <div class="plat-price" style="color:#e23744">₹${r.zomato.price}</div>
+              <div class="plat-delivery">🕐 ${r.zomato.time} min delivery</div>
+              ${r.zomato.price < r.swiggy.price ? '<div class="cheaper-tag">✅ Cheaper</div>' : ''}
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="orderNow('Zomato','${r.name}')">
+              Order on Zomato →
+            </button>
+          </div>
+        </div>
+      </div>`;
+    });
+
+    document.getElementById('foodResults').innerHTML = html;
+  }
+
+  function orderNow(platform, restaurant) {
+    const urls = { Swiggy: 'https://www.swiggy.com', Zomato: 'https://www.zomato.com' };
+    showToast(`Opening ${platform}… 🍴`);
+    setTimeout(() => window.open(urls[platform], '_blank'), 800);
+  }
+</script>
+</body>
+</html>

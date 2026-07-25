@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PickSmart — Login</title>
+  <link rel="stylesheet" href="style.css"/>
+  <style>
+    body { display: flex; align-items: stretch; min-height: 100vh; }
+
+    /* LEFT SIDE */
+    .login-left {
+      flex: 1; display: flex; flex-direction: column;
+      justify-content: center; padding: 70px 80px;
+      position: relative; z-index: 1;
+    }
+    .brand { font-family: 'Syne', sans-serif; font-size: 30px; font-weight: 800; margin-bottom: 10px; }
+    .brand span { color: var(--accent); }
+    .brand-sub {
+      font-size: 13px; color: var(--muted); text-transform: uppercase;
+      letter-spacing: .12em; margin-bottom: 56px;
+    }
+    .tagline-main {
+      font-family: 'Syne', sans-serif; font-size: 42px; font-weight: 800;
+      line-height: 1.15; margin-bottom: 16px;
+    }
+    .tagline-main span { color: var(--accent); }
+    .tagline-sub { font-size: 16px; color: var(--muted); margin-bottom: 48px; max-width: 420px; line-height: 1.6; }
+
+    .features { list-style: none; }
+    .features li {
+      display: flex; align-items: center; gap: 14px;
+      padding: 14px 0; border-bottom: 1px solid var(--border);
+      font-size: 14px; color: var(--muted);
+      opacity: 0; transform: translateX(-20px);
+      animation: slideIn .5s forwards;
+    }
+    .features li:nth-child(1) { animation-delay: .1s; }
+    .features li:nth-child(2) { animation-delay: .25s; }
+    .features li:nth-child(3) { animation-delay: .4s; }
+    .features li:nth-child(4) { animation-delay: .55s; }
+    .features li:last-child { border-bottom: none; }
+    .features li .fi { font-size: 22px; }
+    @keyframes slideIn { to { opacity: 1; transform: none; } }
+
+    /* RIGHT SIDE */
+    .login-right {
+      width: 460px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      padding: 60px 48px;
+      background: var(--surface);
+      border-left: 1px solid var(--border);
+      position: relative; z-index: 1;
+    }
+    .login-box { width: 100%; }
+    .login-box h2 { font-size: 30px; margin-bottom: 6px; }
+    .login-box .sub { color: var(--muted); font-size: 14px; margin-bottom: 34px; }
+    .login-btn { width: 100%; justify-content: center; padding: 14px; font-size: 15px; margin-top: 6px; }
+    .error-msg { color: var(--red); font-size: 13px; margin-top: 7px; display: none; }
+    .demo-link {
+      text-align: center; margin-top: 18px; font-size: 13px; color: var(--muted);
+    }
+    .demo-link a { color: var(--accent); cursor: pointer; }
+    .demo-link a:hover { text-decoration: underline; }
+    .divider { display: flex; align-items: center; gap: 12px; margin: 20px 0; }
+    .divider span { flex: 1; height: 1px; background: var(--border); }
+    .divider p { color: var(--muted); font-size: 12px; white-space: nowrap; }
+
+    @media (max-width: 860px) {
+      body { flex-direction: column; }
+      .login-left { display: none; }
+      .login-right { width: 100%; border-left: none; }
+    }
+  </style>
+</head>
+<body>
+<div class="mesh"></div>
+
+<!-- LEFT -->
+<div class="login-left">
+  <div class="brand">Pick<span>Smart</span> ✦</div>
+  <div class="brand-sub">AI Cost Comparison Platform</div>
+  <div class="tagline-main">Compare Smarter.<br><span>Save More.</span></div>
+  <p class="tagline-sub">Log in to compare smarter, save time, and ride safe — all in one platform.</p>
+  <ul class="features">
+    <li><span class="fi">🚖</span> Compare Ola, Uber & Rapido fares instantly</li>
+    <li><span class="fi">🍛</span> Swiggy vs Zomato — price & delivery time side by side</li>
+    <li><span class="fi">⚡</span> Book the fastest ride when every minute counts</li>
+    <li><span class="fi">🛡️</span> Share live trip details with family — stay safe always</li>
+  </ul>
+</div>
+
+<!-- RIGHT -->
+<div class="login-right">
+  <div class="login-box">
+    <h2>Welcome back 👋</h2>
+    <p class="sub">Sign in to your PickSmart account</p>
+
+    <div class="form-group">
+      <label>Email Address</label>
+      <input type="email" id="emailInput" placeholder="you@example.com" />
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" id="passInput" placeholder="••••••••" />
+      <div class="error-msg" id="loginError">❌ Please enter a valid email and password.</div>
+    </div>
+
+    <button class="btn btn-primary login-btn" onclick="doLogin()">Log In →</button>
+
+    <div class="divider"><span></span><p>or</p><span></span></div>
+
+    <button class="btn btn-secondary login-btn" onclick="demoLogin()" style="margin-top:0">
+      🚀 Continue with Demo Account
+    </button>
+
+    <div class="demo-link">
+      New here? <a href="#">Create an account</a>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  function showToast(msg, color) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.style.background = color || 'var(--green)';
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2800);
+  }
+
+  function doLogin() {
+    const email = document.getElementById('emailInput').value.trim();
+    const pass  = document.getElementById('passInput').value.trim();
+    const err   = document.getElementById('loginError');
+
+    if (!email || !pass) {
+      err.style.display = 'block';
+      return;
+    }
+    err.style.display = 'none';
+    const name = email.split('@')[0];
+    sessionStorage.setItem('ps_user', name);
+    showToast('✅ Logging you in...');
+    setTimeout(() => window.location.href = 'dashboard.html', 900);
+  }
+
+  function demoLogin() {
+    sessionStorage.setItem('ps_user', 'Demo User');
+    showToast('🚀 Opening demo...');
+    setTimeout(() => window.location.href = 'dashboard.html', 800);
+  }
+
+  // Enter key support
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter') doLogin();
+  });
+</script>
+</body>
+</html>

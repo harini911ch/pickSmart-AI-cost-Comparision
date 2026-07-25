@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PickSmart — Compare Rides</title>
+  <link rel="stylesheet" href="style.css"/>
+  <style>
+    .content { display: grid; grid-template-columns: 370px 1fr; gap: 28px; padding: 32px 48px; }
+
+    /* RIDE CARD */
+    .ride-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 14px; padding: 18px 22px;
+      display: flex; align-items: center; gap: 18px;
+      cursor: pointer; transition: all .25s; position: relative; overflow: hidden;
+      margin-bottom: 10px;
+    }
+    .ride-card:hover { border-color: rgba(0,198,255,.4); transform: translateX(4px); }
+    .ride-card.best-value { border-color: var(--green); }
+    .ride-card.fastest    { border-color: var(--accent); }
+    .ride-badge {
+      position: absolute; top: 10px; right: 12px;
+      font-size: 9px; font-weight: 700; letter-spacing: .09em;
+      padding: 3px 9px; border-radius: 10px;
+    }
+    .ride-badge.value { background: rgba(34,197,94,.12); color: var(--green); }
+    .ride-badge.fast  { background: rgba(0,198,255,.12);  color: var(--accent); }
+    .ride-icon  { font-size: 30px; flex-shrink: 0; }
+    .ride-info  { flex: 1; min-width: 0; }
+    .ride-name  { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+    .ride-meta  { font-size: 12px; color: var(--muted); display: flex; gap: 14px; flex-wrap: wrap; }
+    .ride-right { text-align: right; flex-shrink: 0; }
+    .ride-price { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800; }
+    .ride-eta   { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+    /* PROVIDER GROUP */
+    .provider-group { margin-bottom: 20px; }
+    .provider-label {
+      display: flex; align-items: center; gap: 10px; margin-bottom: 10px;
+      font-size: 11px; font-weight: 700; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .1em;
+    }
+    .p-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+
+    /* SAFETY BAR */
+    .safety-bar {
+      background: linear-gradient(135deg, rgba(34,197,94,.07), rgba(0,198,255,.07));
+      border: 1px solid rgba(34,197,94,.2); border-radius: 14px;
+      padding: 18px 22px; display: flex; align-items: center;
+      justify-content: space-between; gap: 16px; flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+    .safety-bar-left { display: flex; align-items: center; gap: 14px; }
+    .safety-bar h4  { font-size: 14px; margin-bottom: 2px; }
+    .safety-bar p   { font-size: 12px; color: var(--muted); }
+
+    /* RESULTS HEADER */
+    .results-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 16px; flex-wrap: wrap; gap: 10px;
+    }
+    .results-header h3 { font-size: 17px; }
+
+    @media (max-width: 900px) {
+      .content { grid-template-columns: 1fr; padding: 20px; }
+    }
+  </style>
+</head>
+<body>
+<div class="mesh"></div>
+
+<nav class="navbar">
+  <div class="nav-logo">Pick<span>Smart</span> ✦</div>
+  <div class="nav-links">
+    <a class="nav-link" href="dashboard.html">Home</a>
+    <a class="nav-link active">Travel</a>
+    <a class="nav-link" href="food.html">Food</a>
+  </div>
+  <div id="navAvatar" class="nav-avatar">U</div>
+</nav>
+
+<div class="page-header">
+  <a class="back-btn" href="dashboard.html">←</a>
+  <div>
+    <h2>🚖 Compare Rides</h2>
+    <p>Ola · Uber · Rapido — all at one place</p>
+  </div>
+</div>
+
+<div class="content">
+
+  <!-- ── SEARCH PANEL ── -->
+  <div class="search-panel">
+    <h3>Plan Your Ride</h3>
+
+    <div class="input-wrap" style="margin-bottom:14px">
+      <span class="input-icon">📍</span>
+      <input class="input-field" type="text" id="fromInput" placeholder="Pickup location"/>
+    </div>
+    <div class="input-wrap">
+      <span class="input-icon">🎯</span>
+      <input class="input-field" type="text" id="toInput" placeholder="Drop location" onkeydown="if(event.key==='Enter')searchRides()"/>
+    </div>
+
+    <div class="section-label">Sort By</div>
+    <div class="chips">
+      <div class="chip active" id="sPrice" onclick="setSort('price')">💰 Price</div>
+      <div class="chip" id="sTime"  onclick="setSort('time')">⚡ Speed</div>
+      <div class="chip" id="sBoth"  onclick="setSort('both')">✨ Best Match</div>
+    </div>
+
+    <div class="section-label">Vehicle Type</div>
+    <div class="chips">
+      <div class="chip active" id="vAll"  onclick="setVehicle('all')">All</div>
+      <div class="chip" id="vBike" onclick="setVehicle('bike')">🏍️ Bike</div>
+      <div class="chip" id="vAuto" onclick="setVehicle('auto')">🛺 Auto</div>
+      <div class="chip" id="vCar"  onclick="setVehicle('car')">🚗 Car</div>
+    </div>
+
+    <div id="peakNotice" style="display:none;margin-top:16px" class="tag tag-red">
+      🔥 Peak hours — surge pricing may apply
+    </div>
+
+    <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:20px" onclick="searchRides()">
+      🔍 Search Rides
+    </button>
+  </div>
+
+  <!-- ── RESULTS ── -->
+  <div>
+    <!-- Safety Banner -->
+    <div class="safety-bar">
+      <div class="safety-bar-left">
+        <span style="font-size:28px">🛡️</span>
+        <div>
+          <h4>Stay Safe on Every Ride</h4>
+          <p>Share your trip details & driver info with family or friends</p>
+        </div>
+      </div>
+      <button class="btn btn-secondary btn-sm" onclick="openShareModal()">📤 Share Trip</button>
+    </div>
+
+    <div class="results-header">
+      <h3 id="resultsTitle">Enter your route above to compare rides</h3>
+    </div>
+
+    <div id="rideResults">
+      <div class="empty-state">
+        <span class="big-icon">🗺️</span>
+        <h3>Ready to compare!</h3>
+        <p>Enter pickup & drop location, then hit Search</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── SHARE MODAL ── -->
+<div class="modal-overlay" id="shareModal" onclick="closeModal(event)">
+  <div class="modal">
+    <h3>🛡️ Share Trip Details</h3>
+    <p>Send your ride info & driver details to a trusted contact</p>
+    <div class="modal-info" id="modalInfo">
+      <div><span>Route</span>    <span id="mRoute">—</span></div>
+      <div><span>Vehicle</span>  <span id="mVehicle">—</span></div>
+      <div><span>Platform</span> <span id="mPlatform">—</span></div>
+      <div><span>Fare</span>     <span id="mFare">—</span></div>
+      <div><span>Driver (Demo)</span><span>Ravi Kumar · KA-05-AB-1234</span></div>
+    </div>
+    <div class="share-options">
+      <div class="share-opt" onclick="shareWhatsApp()">
+        <span class="share-opt-icon">💬</span>
+        <div class="share-opt-text">
+          <strong>Share on WhatsApp</strong>
+          <small>Send details to family or friends instantly</small>
+        </div>
+        <span>→</span>
+      </div>
+      <div class="share-opt" onclick="copyDetails()">
+        <span class="share-opt-icon">📋</span>
+        <div class="share-opt-text">
+          <strong>Copy to Clipboard</strong>
+          <small>Paste in SMS, email or any app</small>
+        </div>
+        <span>→</span>
+      </div>
+    </div>
+    <button class="btn btn-secondary" style="width:100%;justify-content:center"
+      onclick="document.getElementById('shareModal').classList.remove('open')">Close</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="script.js"></script>
+<script>
+  // ─── STATE ───
+  let sortBy  = 'price';
+  let vehicle = 'all';
+  let lastResult = null;  // stores last ride selected for sharing
+
+  // ─── INIT ───
+  const user = sessionStorage.getItem('ps_user') || 'U';
+  document.getElementById('navAvatar').textContent = user[0].toUpperCase();
+
+  // ─── SORT / VEHICLE FILTERS ───
+  function setSort(s) {
+    sortBy = s;
+    ['sPrice','sTime','sBoth'].forEach(id => document.getElementById(id).classList.remove('active'));
+    document.getElementById({ price:'sPrice', time:'sTime', both:'sBoth' }[s]).classList.add('active');
+  }
+  function setVehicle(v) {
+    vehicle = v;
+    ['vAll','vBike','vAuto','vCar'].forEach(id => document.getElementById(id).classList.remove('active'));
+    document.getElementById({ all:'vAll', bike:'vBike', auto:'vAuto', car:'vCar' }[v]).classList.add('active');
+  }
+
+  // ─── SEARCH RIDES ───
+  async function searchRides() {
+    const from = document.getElementById('fromInput').value.trim();
+    const to   = document.getElementById('toInput').value.trim();
+    if (!from || !to) { showToast('⚠️ Enter both pickup and drop location', '#f97316'); return; }
+
+    document.getElementById('rideResults').innerHTML = '<div class="loading-dots"><span></span><span></span><span></span></div>';
+    document.getElementById('resultsTitle').textContent = 'Searching…';
+
+    try {
+      const res  = await fetch(`/api/rides?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&sort=${sortBy}&vehicle=${vehicle}`);
+      const data = await res.json();
+
+      if (!res.ok) { showToast('❌ ' + data.error, '#ef4444'); return; }
+
+      // Peak hour notice
+      document.getElementById('peakNotice').style.display = data.isPeakHour ? 'inline-flex' : 'none';
+
+      renderRides(data, from, to);
+    } catch (err) {
+      document.getElementById('rideResults').innerHTML = '<div class="empty-state"><span class="big-icon">⚠️</span><h3>Server not running</h3><p>Start the backend with: <code>npm start</code></p></div>';
+      document.getElementById('resultsTitle').textContent = 'Error';
+    }
+  }
+
+  // ─── RENDER RIDES ───
+  function renderRides(data, from, to) {
+    const rides    = data.rides;
+    const minPrice = Math.min(...rides.map(r => r.price));
+    const minWait  = Math.min(...rides.map(r => r.waitMin));
+
+    document.getElementById('resultsTitle').textContent =
+      `${rides.length} rides found · ${from} → ${to} · ~${data.km} km`;
+
+    const providers = ['Ola', 'Uber', 'Rapido'];
+    let html = '';
+
+    providers.forEach(prov => {
+      const group = rides.filter(r => r.provider === prov);
+      if (!group.length) return;
+      html += `<div class="provider-group">
+        <div class="provider-label">
+          <div class="p-dot" style="background:${group[0].color}"></div>
+          ${prov}
+        </div>`;
+
+      group.forEach(r => {
+        const isBest = r.price === minPrice;
+        const isFast = r.waitMin === minWait;
+        let cardCls  = isBest ? 'best-value' : isFast ? 'fastest' : '';
+        let badge    = isBest
+          ? '<span class="ride-badge value">BEST VALUE</span>'
+          : isFast ? '<span class="ride-badge fast">FASTEST</span>' : '';
+
+        html += `<div class="ride-card ${cardCls}" onclick="selectRide('${r.name}','${prov}','${from} → ${to}','₹${r.price}')">
+          ${badge}
+          <div class="ride-icon">${r.icon}</div>
+          <div class="ride-info">
+            <div class="ride-name">${r.name}</div>
+            <div class="ride-meta">
+              <span>⏱ ${r.waitMin} min wait</span>
+              <span>📍 ${r.km} km</span>
+              ${r.isSurge ? '<span class="surge-badge">🔥 Surge</span>' : ''}
+            </div>
+          </div>
+          <div class="ride-right">
+            <div class="ride-price">₹${r.price}</div>
+            <div class="ride-eta">${r.isSurge ? 'Surge active' : 'Est. fare'}</div>
+            <button class="btn btn-primary btn-sm" style="margin-top:8px"
+              onclick="bookRide(event,'${prov}')">Book →</button>
+          </div>
+        </div>`;
+      });
+      html += `</div>`;
+    });
+
+    document.getElementById('rideResults').innerHTML = html;
+  }
+
+  // ─── SELECT RIDE (populate modal) ───
+  function selectRide(name, platform, route, fare) {
+    lastResult = { name, platform, route, fare };
+    document.getElementById('mRoute').textContent    = route;
+    document.getElementById('mVehicle').textContent  = name;
+    document.getElementById('mPlatform').textContent = platform;
+    document.getElementById('mFare').textContent     = fare;
+  }
+
+  // ─── BOOK RIDE ───
+  function bookRide(e, provider) {
+    e.stopPropagation();
+    const urls = { Ola: 'https://olaapp.onelink.me', Uber: 'https://m.uber.com', Rapido: 'https://rapido.bike' };
+    showToast(`Opening ${provider}… 🚀`);
+    setTimeout(() => window.open(urls[provider] || '#', '_blank'), 800);
+  }
+
+  // ─── SHARE MODAL ───
+  function openShareModal() {
+    document.getElementById('shareModal').classList.add('open');
+  }
+  function closeModal(e) {
+    if (e.target.id === 'shareModal') document.getElementById('shareModal').classList.remove('open');
+  }
+  function tripText() {
+    const r = lastResult || {};
+    return `🛡️ PICKSMART TRIP ALERT\n\nRoute: ${r.route || 'N/A'}\nVehicle: ${r.name || 'N/A'}\nPlatform: ${r.platform || 'N/A'}\nFare: ${r.fare || 'N/A'}\nDriver: Ravi Kumar\nVehicle No: KA-05-AB-1234\n\nTracked via PickSmart ✦`;
+  }
+  function shareWhatsApp() {
+    window.open(`https://wa.me/?text=${encodeURIComponent(tripText())}`, '_blank');
+  }
+  function copyDetails() {
+    navigator.clipboard.writeText(tripText()).then(() => showToast('✅ Copied to clipboard!'));
+  }
+</script>
+</body>
+</html>
